@@ -1,58 +1,57 @@
-$(function() {  
-  let bstart = document.querySelector('#start');
-  let bstop = document.querySelector('#stop');
-  let container = document.querySelector('#audio-container');
-  let format = {'type': 'audio/mp3'} // output audio format
-  let permissions = { audio: true } // microfone access permission
-  let recording_time = 3000 // 3000 = 3 seconds
-  
-  bstart.addEventListener('click', function() {
-    bstart.disabled = true;
-    bstart.innerHTML = "Speak..."
-    bstop.disabled = false;
-    start()
-  }, false);
 
-  let start = () => {
-    if (navigator.mediaDevices) {
-      console.log('getUserMedia supported.');
+let bstart = document.querySelector('#start_button')
+let bstop = document.querySelector('#stop_button')
+let container = document.querySelector('#audio-container')
+let format = {'type': 'audio/mp3'} // output audio format
+let permissions = { audio: true } // microfone access permission
+let recording_time = 3000 // 3000 = 3 seconds
 
-      navigator.mediaDevices.getUserMedia(permissions).then(stream => { 
-        // permission conceded
-        const mediaRecorder = new MediaRecorder(stream);
-        let chunks = []
+bstart.addEventListener('click', () => {
+  bstart.disabled = true
+  bstart.innerHTML = "Speak..."
+  bstop.disabled = false
+  start()
+}, false);
 
-        mediaRecorder.ondataavailable = e => chunks.push(e.data)
+let start = () => {
+  if (navigator.mediaDevices) { // may need HTTPS connection to exists
 
-        mediaRecorder.onstop = e => {
-          var player = document.createElement("audio")
-          var blob = new Blob(chunks, format);
-          var audioURL = URL.createObjectURL(blob);
-          player.src = audioURL;
-          player.controls = true
-          document.body.appendChild(player);
-          chunks = [];
-          // ???
-          let formdata = new FormData() ;
-          formdata.append('soundBlob', blob, 'whatever.wav')
-          var xhr = new XMLHttpRequest();
-          xhr.open("POST", "upload", true);
-          xhr.setRequestHeader('enctype', 'multipart/form-data');
-          xhr.send(formdata);
-        }
+    // get permission for microfone access
+    navigator.mediaDevices.getUserMedia(permissions).then(stream => { 
+      const mediaRecorder = new MediaRecorder(stream)
+      let chunks = []
 
-        mediaRecorder.start()
+      mediaRecorder.ondataavailable = e => chunks.push(e.data)
 
-        //let stop = () => mediaRecorder.stop()
-        //setTimeout(stop, recording_time)
-        bstop.onclick = () => {
-          mediaRecorder.stop()
-          bstop.disabled = true;
-          bstart.disabled = false;
-          bstart.innerHTML = "Start"
-        }
-      });
+      mediaRecorder.onstop = e => {
+        // add audio to the page
+        var player = document.createElement("audio")
+        var blob = new Blob(chunks, format)
+        var audioURL = URL.createObjectURL(blob)
+        player.src = audioURL
+        player.controls = true
+        document.body.appendChild(player)
+        chunks = []
 
-    } else console.log("Not supported: may need HTTPS connection.");
-  }
-})
+        // Send audio to server
+        let formdata = new FormData()
+        formdata.append('soundBlob', blob, 'whatever.wav')
+        var xhr = new XMLHttpRequest()
+        xhr.open("POST", "upload", true)
+        xhr.setRequestHeader('enctype', 'multipart/form-data')
+        xhr.send(formdata);
+      }
+
+      mediaRecorder.start() // start recording
+
+      // stop button
+      bstop.onclick = () => {
+        mediaRecorder.stop()
+        bstop.disabled = true;
+        bstart.disabled = false;
+        bstart.innerHTML = "Start"
+      }
+    });
+
+  } else console.log("Not supported: may need HTTPS connection.");
+}
