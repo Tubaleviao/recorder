@@ -34,12 +34,10 @@ let start = () => {
         chunks = []
 
         // Send audio to server
+        
         let formdata = new FormData()
         formdata.append('soundBlob', blob, 'whatever.wav')
-        var xhr = new XMLHttpRequest()
-        xhr.open("POST", "upload", true)
-        xhr.setRequestHeader('enctype', 'multipart/form-data')
-        xhr.send(formdata);
+        fetch("upload", {method: 'POST', body: formdata})
       }
 
       mediaRecorder.start() // start recording
